@@ -1,0 +1,16 @@
+#!/bin/bash
+
+PORT=${1:-/dev/ttyS1}
+BAUD=${2:-38400}
+FAN_SPEED=${3:-10}
+SLEEP_PERIOD=${4:-1}
+
+echo "MD1200 reduce fans connecting to $PORT@$BAUD to set the fan speed to $FAN_SPEED every $SLEEP_PERIOD seconds."
+
+stty -F $PORT $BAUD raw -echoe -echok -echoctl -echoke
+
+while true
+do
+    echo -e -n 'set_speed $FAN_SPEED\r' > $PORT
+    sleep $SLEEP_PERIOD
+done
