@@ -1,0 +1,10 @@
+[Unit]
+Description=MD1200 Reduce Fans
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/md1200-reduce-fans.sh
+
+[Install]
+WantedBy=multi-user.target
