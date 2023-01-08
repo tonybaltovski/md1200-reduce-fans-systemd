@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/sbin/md1200-reduce-fans.sh
+ExecStart=/usr/sbin/md1200-reduce-fans
 
 [Install]
 WantedBy=multi-user.target
