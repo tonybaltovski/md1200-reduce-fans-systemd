@@ -11,6 +11,6 @@ stty -F $PORT $BAUD raw -echoe -echok -echoctl -echoke
 
 while true
 do
-    echo -e -n 'set_speed $FAN_SPEED\r' > $PORT
+    echo -e -n "set_speed $FAN_SPEED\r" > $PORT
     sleep $SLEEP_PERIOD
 done
