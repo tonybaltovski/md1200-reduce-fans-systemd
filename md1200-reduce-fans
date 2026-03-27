@@ -1,16 +1,49 @@
 #!/bin/bash
+# md1200-reduce-fans — Continuously sends a fan speed command to a Dell MD1200
+# disk shelf over its serial management port to keep fan noise at a tolerable level.
+#
+# Usage: md1200-reduce-fans [PORT] [BAUD] [FAN_SPEED] [SLEEP_PERIOD]
+#   PORT         Serial device path       (default: /dev/ttyS1)
+#   BAUD         Baud rate                (default: 38400)
+#   FAN_SPEED    Target fan speed (0-100) (default: 10)
+#   SLEEP_PERIOD Seconds between commands (default: 1)
 
-PORT=${1:-/dev/ttyS1}
-BAUD=${2:-38400}
-FAN_SPEED=${3:-10}
-SLEEP_PERIOD=${4:-1}
+set -euo pipefail
 
-echo "MD1200 reduce fans connecting to $PORT@$BAUD to set the fan speed to $FAN_SPEED every $SLEEP_PERIOD seconds."
+# ---------------------------------------------------------------------------
+# Configuration — override via command-line args or environment variables
+# ---------------------------------------------------------------------------
+PORT="${1:-${MD1200_PORT:-/dev/ttyS1}}"
+BAUD="${2:-${MD1200_BAUD:-38400}}"
+FAN_SPEED="${3:-${MD1200_FAN_SPEED:-10}}"
+SLEEP_PERIOD="${4:-${MD1200_SLEEP_PERIOD:-1}}"
 
-stty -F $PORT $BAUD raw -echoe -echok -echoctl -echoke
+# ---------------------------------------------------------------------------
+# Validate that the serial port exists and is a character device
+# ---------------------------------------------------------------------------
+if [[ ! -c "$PORT" ]]; then
+    echo "Error: Serial port '$PORT' does not exist or is not a character device." >&2
+    exit 1
+fi
 
-while true
-do
-    echo -e -n "set_speed $FAN_SPEED\r" > $PORT
-    sleep $SLEEP_PERIOD
+# ---------------------------------------------------------------------------
+# Clean shutdown on SIGTERM / SIGINT so systemd stops the service gracefully
+# ---------------------------------------------------------------------------
+cleanup() {
+    echo "Stopping md1200-reduce-fans."
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
+
+echo "MD1200 reduce fans connecting to ${PORT}@${BAUD} to set the fan speed to ${FAN_SPEED} every ${SLEEP_PERIOD} seconds."
+
+# Configure the serial port: raw mode, no local echo
+stty -F "$PORT" "$BAUD" raw -echoe -echok -echoctl -echoke
+
+# ---------------------------------------------------------------------------
+# Main loop — send the fan speed command, then sleep
+# ---------------------------------------------------------------------------
+while true; do
+    printf 'set_speed %s\r' "$FAN_SPEED" > "$PORT"
+    sleep "$SLEEP_PERIOD"
 done
